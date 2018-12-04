@@ -52,4 +52,4 @@ config :opencensus, :stat,
 See [LICENSE](LICENSE) file.
 
 [oc]: https://github.com/census-instrumentation/opencensus-erlang "Opencensus Erlang"
-[dd]: https://datadog.com "DataDog"
+[dd]: https://datadoghq.com "DataDog"
