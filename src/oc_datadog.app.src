@@ -1,6 +1,6 @@
 {application, oc_datadog,
- [{description, "An OTP library"},
-  {vsn, "0.1.0"},
+ [{description, "Opencensus integration for DataDog"},
+  {vsn, git},
   {registered, []},
   {applications,
    [kernel,
@@ -11,7 +11,9 @@
   {env,[]},
   {modules, []},
 
-  {maintainers, []},
+  {maintainers, ["Łukasz Niemier"]},
   {licenses, ["Apache 2.0"]},
-  {links, []}
+  {links, [{"GitHub", "https://github.com/hauleth/oc_datadog"}]}
  ]}.
+
+% vi: ft=erlang syn=erlang
