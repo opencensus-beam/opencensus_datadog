@@ -5,7 +5,8 @@
   {applications,
    [kernel,
     stdlib,
-    opencensus
+    opencensus,
+    inets
    ]},
   {env,[]},
   {modules, []},

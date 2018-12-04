@@ -1,3 +1,14 @@
+%% @author Łukasz Niemier <lukasz+opensource@niemier.pl>
+%%
+%% @doc Trace reporter for DataDog ([https://datadog.com]).
+%%
+%% == Configuration ==
+%%
+%% <ul>
+%%  <li>`host' - address where DataDog Agent lives (default `"localhost"')</li>
+%%  <li>`port' - port on which Agent listens for traces (default `8126')</li>
+%%  <li>`service' - service name (default `opencensus-app')</li>
+%% </ul>
 -module(oc_reporter_datadog).
 
 -behaviour(oc_reporter).
@@ -8,11 +19,14 @@
 -include_lib("opencensus/include/opencensus.hrl").
 -include_lib("kernel/include/logger.hrl").
 
+-define(TRACER_VERSION, "OC/0.1.0").
+
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8126).
 -define(DEFAULT_SERVICE, <<"opencensus-app">>).
 -define(DEFAULT_TYPE, <<"custom">>).
 
+-spec init(term()) -> oc_reporter:opts().
 init(Options) ->
     Host = proplists:get_value(host, Options, ?DEFAULT_HOST),
     Port = proplists:get_value(port, Options, ?DEFAULT_PORT),
@@ -20,34 +34,53 @@ init(Options) ->
     Type = proplists:get_value(type, Options, ?DEFAULT_TYPE),
     #{host => Host, port => Port, service => Service, type => Type}.
 
-report(Spans, #{service := Service, host := Host, port := Port, type := Type}) ->
+-spec report(nonempty_list(opencensus:span()), oc_reporter:opts()) -> ok.
+report(Spans, #{
+         service := Service,
+         host := Host,
+         port := Port,
+         type := Type}) ->
     Sorted = lists:sort(fun(A, B) ->
                                 A#span.trace_id =< B#span.trace_id
                         end, Spans),
     Grouped = group(Sorted),
     DSpans = [[build_span(S, Service, Type) || S <- Trace] || Trace <- Grouped],
 
-
     try jsx:encode(DSpans) of
         JSON ->
             Address = io_lib:format('http://~s:~B/v0.3/traces', [Host, Port]),
+            Headers = [
+                       {"Datadog-Meta-Lang", "erlang"},
+                       {"Datadog-Meta-Lang-Version", lang_version()},
+                       {"Datadog-Meta-Lang-Interpreter", interpreter_version()},
+                       {"Datadog-Meta-Tracer-Version", ?TRACER_VERSION}
+                      ],
             case httpc:request(
                    put,
-                   {Address, [], "application/json", JSON},
+                   {Address, Headers, "application/json", JSON},
                    [],
                    []
                   ) of
                 {ok, {{_, Code, _}, _, _}} when Code >= 200; Code =< 299 ->
                     ok;
                 {ok, {{_, Code, _}, _, Message}} ->
-                    ?LOG_ERROR("DD: Unable to send spans, DD reported an error: ~p : ~p",
+                    ?LOG_ERROR("DD: Unable to send spans, DD reported an error: ~p: ~p",
                               [Code, Message]);
                 {error, Reason} ->
-                    ?LOG_ERROR("DD: Unable to send spans, client error: ~p", [Reason])
+                    ?LOG_ERROR("DD: Unable to send spans, client error: ~p",
+                               [Reason])
             end
     catch
-        error:_ -> throw(datadog_json_encode_error)
+        error:Error ->
+            ?LOG_ERROR("DD: Can't spans encode to json: ~p", [Error])
     end.
+
+lang_version() ->
+    erlang:system_info(otp_version).
+
+interpreter_version() ->
+    io_lib:format('~s-~s', [erlang:system_info(version),
+                            erlang:system_info(system_architecture)]).
 
 group([]) -> [];
 group([First | Spans]) -> group(Spans, [[First]]).
@@ -66,7 +99,8 @@ build_span(Span, Service, Type) ->
       <<"resource">> => Span#span.name,
       <<"service">> => to_tag(Service),
       <<"start">> => wts:to_absolute(Span#span.start_time) * 1000,
-      <<"duration">> => wts:duration(Span#span.start_time, Span#span.end_time) * 1000,
+      <<"duration">> =>
+        wts:duration(Span#span.start_time, Span#span.end_time) * 1000,
       <<"type">> => to_tag(Type),
       <<"meta">> => to_meta(Span#span.attributes)}.
 
