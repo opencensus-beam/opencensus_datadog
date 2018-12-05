@@ -61,7 +61,7 @@ report(Spans, #{
                    [],
                    []
                   ) of
-                {ok, {{_, Code, _}, _, _}} when Code >= 200; Code =< 299 ->
+                {ok, {{_, Code, _}, _, _}} when Code >= 200, Code =< 299 ->
                     ok;
                 {ok, {{_, Code, _}, _, Message}} ->
                     ?LOG_ERROR("DD: Unable to send spans, DD reported an error: ~p: ~p",
