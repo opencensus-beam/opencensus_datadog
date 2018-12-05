@@ -83,4 +83,4 @@ format_num(infinity) -> <<"infinity">>;
 format_num(Integer) when is_integer(Integer) ->
     erlang:integer_to_binary(Integer);
 format_num(Float) when is_float(Float) ->
-    erlang:float_to_binary(Float, [{decimal, 5}, compact]).
+    erlang:float_to_binary(Float, [{decimals, 5}, compact]).
