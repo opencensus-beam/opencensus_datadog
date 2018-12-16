@@ -19,7 +19,11 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8125).
 
+-ifdef(OTP_RELEASE).
 -include_lib("kernel/include/logger.hrl").
+-else.
+-define(LOG_ERROR(Format, Data), error_logger:error_msg(Format, Data)).
+-endif.
 
 export(ViewData, Options) ->
     Host = proplists:get_value(host, Options, ?DEFAULT_HOST),

@@ -17,7 +17,12 @@
 -export([init/1, report/2]).
 
 -include_lib("opencensus/include/opencensus.hrl").
+
+-ifdef(OTP_RELEASE).
 -include_lib("kernel/include/logger.hrl").
+-else.
+-define(LOG_ERROR(Format, Data), error_logger:error_msg(Format, Data)).
+-endif.
 
 -define(TRACER_VERSION, "OC/0.1.0").
 
