@@ -1,6 +1,9 @@
 oc_datadog
 =====
 
+[![CircleCI](https://circleci.com/gh/opencensus-beam/opencensus_datadog.svg?style=svg)](https://circleci.com/gh/opencensus-beam/opencensus_datadog)
+[![codecov](https://codecov.io/gh/opencensus-beam/opencensus_datadog/branch/master/graph/badge.svg)](https://codecov.io/gh/opencensus-beam/opencensus_datadog)
+
 [Opencensus][oc] integration to [DataDog][dd] traces and metrics (via dogstatsd).
 
 ## Installation
