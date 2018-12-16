@@ -64,7 +64,8 @@ report(Spans, #{
                 {ok, {{_, Code, _}, _, _}} when Code >= 200, Code =< 299 ->
                     ok;
                 {ok, {{_, Code, _}, _, Message}} ->
-                    ?LOG_ERROR("DD: Unable to send spans, DD reported an error: ~p: ~p",
+                    ?LOG_ERROR("DD: Unable to send spans,"
+                               " DD reported an error: ~p: ~p",
                               [Code, Message]);
                 {error, Reason} ->
                     ?LOG_ERROR("DD: Unable to send spans, client error: ~p",

@@ -6,7 +6,9 @@
 %%
 %% <ul>
 %%  <li>`host' - address where DataDog Agent lives (default `"localhost"')</li>
-%%  <li>`port' - port on which Agent listens for statsd metrics (default `8125')</li>
+%%  <li>
+%%    `port' - port on which Agent listens for statsd metrics (default `8125')
+%%  </li>
 %% </ul>
 -module(oc_stat_exporter_datadog).
 
@@ -74,7 +76,11 @@ build_row(_Type, Value, Tags) ->
     [[$:, format_num(Value), "|g", Tags]].
 
 bucket_row({Bound, Count}, Tags) when is_integer(Count) ->
-    [$:, format_num(Count), "|g", tags_append(Tags, ["le:", format_num(Bound)])].
+    [
+     $:, format_num(Count),
+     "|g",
+     tags_append(Tags, ["le:", format_num(Bound)])
+    ].
 
 tags_append([], Value) -> ["|#", Value];
 tags_append(List, Value) -> [List, $,, Value].
