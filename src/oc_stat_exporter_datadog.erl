@@ -43,9 +43,11 @@ build_packet(#{name := Name,
     lists:join($\n, List).
 
 build_tags(Tags, TagsV, CTags) ->
-  build_tags(maps:merge(CTags, maps:from_list(lists:zip(Tags, TagsV)))).
+    TagsMap = maps:merge(CTags, maps:from_list(lists:zip(Tags, TagsV))),
+    TagsList = maps:to_list(TagsMap),
+    Cleaned = [{Key, Value} || {Key, Value} <- TagsList, Value =/= undefined],
+    build_tags(Cleaned).
 
-build_tags(Map) when is_map(Map) -> build_tags(maps:to_list(Map));
 build_tags([]) -> [];
 build_tags(Tags) ->
     List = [[to_key(Key), $:, Value]
