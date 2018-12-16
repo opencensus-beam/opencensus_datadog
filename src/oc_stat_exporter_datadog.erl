@@ -19,7 +19,11 @@
 -define(DEFAULT_HOST, "localhost").
 -define(DEFAULT_PORT, 8125).
 
+-ifdef(OTP_RELEASE).
 -include_lib("kernel/include/logger.hrl").
+-else.
+-define(LOG_ERROR(Format, Data), error_logger:error_msg(Format, Data)).
+-endif.
 
 export(ViewData, Options) ->
     Host = proplists:get_value(host, Options, ?DEFAULT_HOST),
@@ -43,9 +47,11 @@ build_packet(#{name := Name,
     lists:join($\n, List).
 
 build_tags(Tags, TagsV, CTags) ->
-  build_tags(maps:merge(CTags, maps:from_list(lists:zip(Tags, TagsV)))).
+    TagsMap = maps:merge(CTags, maps:from_list(lists:zip(Tags, TagsV))),
+    TagsList = maps:to_list(TagsMap),
+    Cleaned = [{Key, Value} || {Key, Value} <- TagsList, Value =/= undefined],
+    build_tags(Cleaned).
 
-build_tags(Map) when is_map(Map) -> build_tags(maps:to_list(Map));
 build_tags([]) -> [];
 build_tags(Tags) ->
     List = [[to_key(Key), $:, Value]

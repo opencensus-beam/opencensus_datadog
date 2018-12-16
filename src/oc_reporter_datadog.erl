@@ -17,7 +17,12 @@
 -export([init/1, report/2]).
 
 -include_lib("opencensus/include/opencensus.hrl").
+
+-ifdef(OTP_RELEASE).
 -include_lib("kernel/include/logger.hrl").
+-else.
+-define(LOG_ERROR(Format, Data), error_logger:error_msg(Format, Data)).
+-endif.
 
 -define(TRACER_VERSION, "OC/0.1.0").
 
@@ -32,14 +37,20 @@ init(Options) ->
     Port = proplists:get_value(port, Options, ?DEFAULT_PORT),
     Service = proplists:get_value(service, Options, ?DEFAULT_SERVICE),
     Type = proplists:get_value(type, Options, ?DEFAULT_TYPE),
-    #{host => Host, port => Port, service => Service, type => Type}.
+    Client = proplists:get_value(http_client, Options, fun default_client/3),
+    #{host => Host,
+      port => Port,
+      service => Service,
+      type => Type,
+      client => Client}.
 
 -spec report(nonempty_list(opencensus:span()), oc_reporter:opts()) -> ok.
 report(Spans, #{
          service := Service,
          host := Host,
          port := Port,
-         type := Type}) ->
+         type := Type,
+         client := Client}) ->
     Sorted = lists:sort(fun(A, B) ->
                                 A#span.trace_id =< B#span.trace_id
                         end, Spans),
@@ -55,15 +66,9 @@ report(Spans, #{
                        {"Datadog-Meta-Lang-Interpreter", interpreter_version()},
                        {"Datadog-Meta-Tracer-Version", ?TRACER_VERSION}
                       ],
-            case httpc:request(
-                   put,
-                   {Address, Headers, "application/json", JSON},
-                   [],
-                   []
-                  ) of
-                {ok, {{_, Code, _}, _, _}} when Code >= 200, Code =< 299 ->
-                    ok;
-                {ok, {{_, Code, _}, _, Message}} ->
+            case Client(Address, Headers, JSON) of
+                ok -> ok;
+                {error, {http_error, Code, Message}} ->
                     ?LOG_ERROR("DD: Unable to send spans,"
                                " DD reported an error: ~p: ~p",
                               [Code, Message]);
@@ -76,8 +81,23 @@ report(Spans, #{
             ?LOG_ERROR("DD: Can't spans encode to json: ~p", [Error])
     end.
 
+default_client(Address, Headers, JSON) ->
+    case httpc:request(
+           put,
+           {Address, Headers, "application/json", JSON},
+           [],
+           []
+          ) of
+        {ok, {{_, Code, _}, _, _}} when Code >= 200, Code =< 299 ->
+            ok;
+        {ok, {{_, Code, _}, _, Body}} ->
+            {error, {http_error, Code, Body}};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
 lang_version() ->
-    erlang:system_info(otp_version).
+    erlang:system_info(otp_release).
 
 interpreter_version() ->
     io_lib:format('~s-~s', [erlang:system_info(version),

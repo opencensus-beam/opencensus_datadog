@@ -1,0 +1,86 @@
+version: 2.1
+
+commands:
+  fetch_deps:
+    description: "Fetch deps, build, and cache them"
+    parameters:
+      otp_version:
+        type: string
+        default: "any"
+    steps:
+      - restore_cache:
+          keys:
+            - deps-v1-<<parameters.otp_version>>-{{ checksum "rebar.lock" }}-{{ .Branch }}-{{ .Revision }}
+            - deps-v1-<<parameters.otp_version>>-{{ checksum "rebar.lock" }}-{{ .Branch }}-
+            - deps-v1-<<parameters.otp_version>>-{{ checksum "rebar.lock" }}-
+            - deps-v1-<<parameters.otp_version>>-
+      - run: rebar3 get-deps
+      - run: rebar3 as test compile --deps_only
+      - save_cache:
+          key: deps-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - "~/.cache/rebar3/hex/default/packages"
+            - "_build/test/lib"
+
+jobs:
+  test:
+    parameters:
+      otp_version:
+        type: string
+        description: OTP version to test against to
+    docker:
+      - image: erlang:<<parameters.otp_version>>
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - fetch_deps:
+          otp_version: <<parameters.otp_version>>
+      - run: mkdir -p /tmp/ct_reports
+      - run: rebar3 do ct --cover, cover
+      - run: rebar3 covertool generate
+      - run: bash <(curl -s https://codecov.io/bash) -f _build/test/covertool/*.xml
+      - store_test_results:
+          path: /tmp/ct_reports
+
+  dialyzer:
+    docker:
+      - image: erlang:21
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - fetch_deps
+      - restore_cache:
+          keys:
+            - dialyzer-v1-{{ checksum "rebar.lock" }}
+            - dialyzer-v1
+      - run: rebar3 dialyzer
+      - save_cache:
+          key: dialyzer-v1-{{ checksum "rebar.lock" }}
+          paths:
+            - "_build"
+      - run: rebar3 dialyzer
+
+  format:
+    docker:
+      - image: erlang:21
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - fetch_deps
+      - run: rebar3 lint
+
+workflows:
+  version: 2
+  lints:
+    jobs:
+      - dialyzer
+      - format
+      # - inchci
+  testing:
+    jobs:
+      - test:
+          name: "OTP 21"
+          otp_version: "21"
+      - test:
+          name: "OTP 20"
+          otp_version: "20"
