@@ -59,8 +59,11 @@ build_tags(Tags) ->
     ["|#", lists:join($,, List)].
 
 to_key(Atom) when is_atom(Atom) ->
-    erlang:atom_to_binary(Atom, utf8);
-to_key(Value) -> Value.
+    sanitize(erlang:atom_to_list(Atom));
+to_key(Value) -> sanitize(Value).
+
+sanitize(Name) ->
+    re:replace(Name, "[^[:alpha:][:digit:]_]+", ".", [global]).
 
 build_rows(Name, Type, CTags, Tags, #{tags := TagsV, value := Value}) ->
     TagList = build_tags(Tags, TagsV, CTags),
