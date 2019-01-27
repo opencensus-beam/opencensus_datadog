@@ -1,6 +1,6 @@
 {application, oc_datadog,
  [{description, "Opencensus integration for DataDog"},
-  {vsn, git},
+  {vsn, "git"},
   {registered, []},
   {applications,
    [kernel,
@@ -11,7 +11,6 @@
   {env,[]},
   {modules, []},
 
-  {maintainers, ["Łukasz Niemier"]},
   {licenses, ["Apache 2.0"]},
   {links, [{"GitHub", "https://github.com/hauleth/oc_datadog"}]}
  ]}.
