@@ -14,7 +14,7 @@ init_per_testcase(_, Config) ->
     {ok, Socket} = gen_udp:open(8125, [{active, once}]),
     Measure = oc_stat_measure:new('datadog/test', "Test", foos),
     {ok, View} = oc_stat_view:subscribe(#{
-                  name => "datadog.test",
+                  name => 'datadog/test',
                   measure => Measure,
                   description => "Test",
                   tags => [foo, bar],
