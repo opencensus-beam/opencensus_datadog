@@ -125,7 +125,12 @@ build_span(Span, Service, Type) ->
       <<"type">> => to_tag(Type),
       <<"meta">> => to_meta(Span#span.attributes)}.
 
-to_meta(Attributes) -> maps:map(fun to_tag/2, Attributes).
+to_meta(Attributes) -> maps:map(fun to_meta/2, Attributes).
+
+to_meta(_Name, Value) when is_integer(Value) -> integer_to_binary(Value);
+to_meta(_Name, Value) when is_float(Value) ->
+    float_to_binary(Value, [compact, {decimals, 253}]);
+to_meta(Name, Value) -> to_tag(Name, Value).
 
 to_tag(Value) -> to_tag(nil, Value).
 
