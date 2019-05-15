@@ -16,7 +16,7 @@ init_per_testcase(_, Config) ->
               span_id = 1,
               start_time = wts:timestamp(),
               end_time = wts:timestamp(),
-              attributes = #{foo => "bar"}
+              attributes = #{foo => "bar", baz => 10, buz => 1.0}
              },
     Options = oc_reporter_datadog:init([{http_client, fun mock_client/3}]),
     [{span, Span}, {options, Options} | Config].
@@ -38,7 +38,7 @@ test_reports_spans(Config) ->
              <<"span_id">> := 1,
              <<"type">> := <<"custom">>,
              <<"duration">> := _,
-             <<"meta">> := #{<<"foo">> := <<"bar">>}} = RSpan,
+             <<"meta">> := #{<<"foo">> := <<"bar">>, <<"baz">> := <<"10">>, <<"buz">> := <<"1.0">>}} = RSpan,
             ok;
         Msg ->
             ct:fail("Unknown message: ~p", [Msg])
